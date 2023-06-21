@@ -61,15 +61,32 @@ resource "aws_default_route_table" "main-rtb" {
     }
 }
 
-resource "aws_security_group" "myapp-sg" {
-    name = "myapp-sg"
+resource "aws_default_security_group" "default-sg" {
+    
     vpc_id = aws_vpc.myapp-vpc.id
-   
     ingress {
         from_port = 22
         to_port = 22
         protocol = "tcp"
-        cidr_blocks = ["var.my_ip"]
+        cidr_blocks = [var.my_ip]
+    }
+    ingress {
+        from_port = 8080
+        to_port = 8080
+        protocol = "tcp"
+        cidr_blocks = ["0.0.0.0/0"]
+    }
+    
+    # egress (outbound)traffic allow EC2 to connect to outside network and no any restriction 
+    egress {
+        from_port = 0  #No restriction for port
+        to_port = 0
+        protocol = "-1"  # Protocal for any
+        cidr_blocks = ["0.0.0.0/0"] 
+        prefix_list_ids = []
     }
 
+    tags = {
+        Name: "${var.env_prefix}-default-sg"
+    }
 }
