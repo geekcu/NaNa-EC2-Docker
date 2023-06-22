@@ -11,6 +11,7 @@ variable env_prefix {}
 variable my_ip {}
 variable instance_type {}
 variable public_key_location {}
+variable private_key_location {}
 
 # Create a VPC
 resource "aws_vpc" "myapp-vpc" {
@@ -125,8 +126,29 @@ resource "aws_instance" "myapp-server" {
     associate_public_ip_address = true
     key_name = aws_key_pair.ssh-key.key_name
     
-# Run bash script to install docker and nginx continer 
-    user_data = file ("entry-script.sh")
+    # Run an sperate bash script file to install Docker and Nginx Contianer 
+    # user_data = file ("entry-script.sh")
+
+    # invokes script on a remote resources after it is created
+    connection {
+        type = "ssh"
+        host = self.public_ip
+        user = "ec2-user"
+        private_key = file(var.private_key_location)
+    }
+    
+    # Copy files or directoires from local to newly create resource
+    provisioner "file" {
+        source = "entry-script.sh"
+        destination = "/home/ec2-user/entry-script-on-ec2.sh"
+    }
+    provisioner "remote-exec" {
+        script = file("entry-script-on-ec2.sh")
+    }
+    # invokes a local executable after a resource is created 
+    provisioner "local-exec" {
+        command = "echo ${self.public_ip} > output.txt"
+    }
     tags = {
         Name: "${var.env_prefix}-server"
     }
